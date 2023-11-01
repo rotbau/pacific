@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vdoubleb:devgroup-cluster-edit
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: edit
+subjects:
+#- kind: User
+#  apiGroup: rbac.authorization.k8s.io  
+#  name: sso:bbauer@vsphere.local
+# Authorize Group to use PSP
+- kind: Group
+  apiGroup: rbac.authorization.k8s.io
+  name: sso:devgroup@vsphere.local

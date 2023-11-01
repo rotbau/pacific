@@ -1,0 +1,84 @@
+---
+runtime: "python3"
+code: |
+  import requests
+  import json
+  import ssl
+  import atexit
+  import sys
+  import argparse
+  import getpass
+  from context import getInput, setOutput
+  from requests.packages.urllib3.exceptions import InsecureRequestWarning
+  requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+  s=requests.Session()
+  s.verify=False
+  host = getInput('host')
+  user = getInput('user')
+  vcpass = getInput('vcpass')
+  clustername = getInput('clustername')
+  namespacename = getInput('namespacename')
+  description = "Code Stream Created Namespace"
+  headers = {'content-type':'application/json'}
+  session_response= s.post('https://'+host+'/rest/com/vmware/cis/session',auth=(user,vcpass))
+  if session_response.ok:
+    print ("Session creation is successful")
+  else:
+    print ("Session creation is failed, please check")
+    quit()
+  #Getting cluster moid
+  cluster_object=s.get('https://'+host+'/rest/vcenter/cluster?filter.names='+clustername)
+  if len(json.loads(cluster_object.text)["value"])==0:
+    print ("NO cluster found, please enter valid cluster name")
+    sys.exit()
+  cluster_id=json.loads(cluster_object.text)["value"][0].get("cluster")
+  print ("cluster-id::"+cluster_id)
+  payload = {
+              "vm_service_spec" : {
+              "namespace" : namespacename,
+              "description" : description,
+              "vm_classes" : ["best-effort-xsmall", "best-effort-small", "best-effort-medium", "best-effort-large"
+              ],
+              }
+            }
+  json_payload = json.loads(json.dumps(payload))
+  json_response = s.patch('https://'+host+'/api/vcenter/namespaces/instances/'+namespacename,headers=headers,json=json_payload)
+  if json_response.ok:
+    print ("Supervisor Namespace creation invoked, checkout your H5C")
+  else:
+    print ("Supervisor Namespace creation NOT invoked, please check your inputs once again")
+  setOutput('statusCode',json_response.text)
+  session_delete=s.delete('https://'+host+'/rest/com/vmware/cis/session',auth=(user,vcpass))
+inputProperties:      # Enter fields for input section of a task
+  - name: 'host'
+    type: text
+    title: vCenter Host
+    defaultValue: 'vCenter URL'
+    bindable: true
+
+  - name: 'user'
+    type: text
+    title: vCenter Username
+    defaultValue: 'administrator@vsphere.local'
+    bindable: true
+
+  - name: 'vcpass'
+    type: text
+    title: vCenter Password
+    bindable: true
+
+  - name: "clustername"
+    type: text
+    title: Supervisor Cluster Name
+    defaultValue: 'Supervisor Cluster'
+    bindable: true
+
+  - name: 'namespacename'
+    type: text
+    title: Supervisor Namespace Name
+    bindable: true
+
+outputProperties:     # Enter fields that would display in output section
+  - name: statusCode
+    type: label
+    title: Status Code

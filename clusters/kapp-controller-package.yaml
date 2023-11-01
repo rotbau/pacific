@@ -1,0 +1,35 @@
+apiVersion: run.tanzu.vmware.com/v1alpha3
+kind: KappControllerConfig
+metadata:
+  name: {clustername}-kapp-controller-package
+  namespace: {vsphere-namespace}
+spec:
+  kappController:
+    config:
+      caCerts: |
+        -----BEGIN CERTIFICATE-----
+        MIIFqDCCA5CgAwIBAgIBADANBgkqhkiG9w0BAQ0FADBlMQswCQYDVQQGEwJVUzES
+        MBAGA1UECAwJTWlubmVzb3RhMRQwEgYDVQQHDAtNaW5uZWFwb2xpczEVMBMGA1UE
+        ...................
+        -----END CERTIFICATE-----
+    createNamespace: false
+    deployment:
+      apiPort: 10100
+      concurrency: 4
+      hostNetwork: true
+      metricsBindAddress: "0"
+      priorityClassName: system-cluster-critical
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+      - effect: NoSchedule
+        key: node.kubernetes.io/not-ready
+      - effect: NoSchedule
+        key: node.cloudprovider.kubernetes.io/uninitialized
+        value: "true"
+    globalNamespace: tkg-system
+  namespace: tkg-system

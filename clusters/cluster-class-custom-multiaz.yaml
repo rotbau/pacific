@@ -1,0 +1,140 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: testcluster
+  namespace: testnamespace
+spec:
+  clusterNetwork:
+    services:
+      cidrBlocks: ["198.51.100.0/12"]
+    pods:
+      cidrBlocks: ["192.168.0.0/16"]
+    serviceDomain: "cluster.local"
+  topology:
+    class: tanzukubernetescluster
+    version: v1.26.5---vmware.2-fips.1-tkg.1
+    controlPlane:
+      replicas: 1
+#      variables:                                                                # Can override specific variables at the node pool level   
+#        overrides:
+#        - name: vmClass
+#          value: best-effort-large
+#        - name: ntp
+#          value: time.vmware.com
+      metadata:
+        annotations:
+          run.tanzu.vmware.com/resolve-os-image: os-name=ubuntu                   # Set OS Image version
+    workers:
+      machineDeployments:
+        - class: node-pool
+          failureDomain: zone1
+          name: node-pool-1
+          replicas: 1
+#          variables:                                                             # Can override specific variables at the node pool level   
+#            overrides:
+#            - name: vmClass
+#              value: best-effort-large
+#            - name: ntp
+#              value: time.vmware.com
+          metadata:
+            annotations:
+              run.tanzu.vmware.com/resolve-os-image: os-name=ubuntu               # Set OS Image version
+        - class: node-pool
+          failureDomain: zone2 
+          name: node-pool-2
+          replicas: 0
+#          variables:                                                             # Can override specific variables at the node pool level   
+#            overrides:
+#            - name: vmClass
+#              value: best-effort-large
+#            - name: ntp
+#              value: time.vmware.com
+          metadata:
+            annotations:
+              run.tanzu.vmware.com/resolve-os-image: os-name=ubuntu               # Set OS Image version
+        - class: node-pool
+          failureDomain: zone3 
+          name: node-pool-3
+          replicas: 0
+#          variables:                                                             # Can override specific variables at the node pool level   
+#            overrides:
+#            - name: vmClass
+#              value: best-effort-large
+#            - name: ntp
+#              value: time.vmware.com
+          metadata:
+            annotations:
+              run.tanzu.vmware.com/resolve-os-image: os-name=ubuntu               # Set OS Image version
+    variables:
+      - name: vmClass
+        value: best-effort-xsmall
+      - name: storageClass
+        value: vsan-default-storage-policy
+      - name: defaultStorageClass
+        value: vsan-default-storage-policy
+      - name: user
+        value:
+          passwordSecret:
+            key: ssh-passwordkey
+            name: testcluster-ssh-password-hashed
+          sshAuthorizedKey: |
+            ssh-rsa AAAAB3Nnpm0x88nB7PoSDOMG+rOAB7Z51YaObQN1QI28X/Tp4X4Ey90Faxgy7MumhshyzYtVQinHBtplxrBPrnheSm/GUhYHYBTvnnsY0MVcDBnp++ndo4kWH+X40nkTkY8fNVqQeWFsX7q56ddDXEueJE1UfIN1xkASxdR46nhKNg6yRJVhI3B+gptB0XE9NU1SUi9gBlFVeJUr3rGAf43UZ69hZWLgG71agfoTwqkSD96C87Ny7AtNTMOuU+2VfM+YA/5EzkJIs4qDXp1RP7amdJj5kpcpHaeozJk+Uajfaz2N+y/q7MolL0Sau7LxIxEEJdMJsR81WlyctF2nohCsZ4kBHsIcD0/vP+wqrgsB1FmbgvA9x+TmMK7/Xw42v8gxT2VzFfvSHajq71FqfkdwjftHJglRGfN6PU8TEGL3DH7tVs0fbwFwWTM+G8sQAonwWYr4KzYk4AatL1GdDHi4sdmriMgSEV0GZkuZtVCp1aWBe1hvAKL1bFrKhiNbLyXr5mIFIQuDm7nYZ5sym1Vb/1psLbOZfJ7sqxNw==        
+      - name: trust
+        value:
+          additionalTrustedCAs:                                                   # Trusted CA name needs to match the data in cluster secret that is pre-created
+          - name: harbor-ca
+          - name: corporate-ca
+      - name: ntp                                                                 # Set different NTP server from deployment
+        value: time.vmware.com
+      - name: clusterEncryptionConfigYaml
+        value: |
+          apiVersion: apiserver.config.k8s.io/v1
+          kind: EncryptionConfiguration
+          resources:
+            - resources:
+                - secrets
+              providers:
+                - aescbc:
+                    keys:
+                      - name: key1
+                        secret: QiMg...............
+                - identity: {}
+# Additional Global Variables
+#      - name: proxy                                                              # Set Proxy for the cluster
+#        value:
+#          httpProxy: http://lab-proxy.tkgu.chaoslab.systems:3128
+#          httpsProxy: http://lab-proxy.tkgu.chaoslab.systems:3128
+#          noProxy: [192.168.144.0/20, 192.168.128.0/20]                          # Both formats should work
+#          noProxy:
+#          - 192.168.40.0/24
+#          - 192.168.60.0/24
+#          - 192.168.30.0/24
+#          - 192.168.75.0/24           
+#      - name: nodePoolVolumes                                                    # Add extra volumes for Nodes.  Only supports these 2 mounts
+#        value:
+#        - name: containerd
+#          capacity:
+#            storage: 20Gi
+#          mountPath: /var/lib/containerd
+#          storageClass: vsan-default-storage-policy
+#        - name: kubelet
+#          capacity:
+#            storage: 20Gi
+#          mountPath: /var/lib/kubelet
+#          storageClass: vsan-default-storage-policy
+#      - name: controlPlaneVolumes                                                # Add extra volumes for Control Plane.  Only supports these 2 mounts
+#        value:
+#        - name: containerd
+#          capacity:
+#            storage: 20Gi
+#          mountPath: /var/lib/containerd
+#          storageClass: vsan-default-storage-policy
+#        - name: kubelet
+#          capacity:
+#            storage: 20Gi
+#          mountPath: /var/lib/kubelet
+#          storageClass: vsan-default-storage-policy
+#      - name: nodePoolTaints
+#        value: []
+#      - name: nodePoolLabels
+#        value: []        

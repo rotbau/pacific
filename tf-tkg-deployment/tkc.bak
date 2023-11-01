@@ -1,0 +1,51 @@
+provider "kubernetes-alpha" {
+  config_path = "~/.kube/config" // path to kubeconfig
+}
+
+resource "kubernetes_manifest" "tanzukubernetescluster_tf_tkg_cluster1" {
+  provider = kubernetes-alpha
+
+  manifest = {
+    "apiVersion" = "run.tanzu.vmware.com/v1alpha1"
+    "kind" = "TanzuKubernetesCluster"
+    "metadata" = {
+      "name" = "tf-tkg-cluster1"
+      "namespace" = "app01"
+    }
+    "spec" = {
+      "distribution" = {
+        "version" = "v1.18.5+vmware.1-tkg.1.c40d30d"
+      }
+      "settings" = {
+        "network" = {
+          "cni" = {
+            "name" = "antrea"
+          }
+          "pods" = {
+            "cidrBlocks" = [
+              "193.0.2.0/16",
+            ]
+          }
+          "serviceDomain" = "managedcluster.local"
+          "services" = {
+            "cidrBlocks" = [
+              "195.51.100.0/12",
+            ]
+          }
+        }
+      }
+      "topology" = {
+        "controlPlane" = {
+          "class" = "best-effort-xsmall"
+          "count" = 1
+          "storageClass" = "kubernetes"
+        }
+        "workers" = {
+          "class" = "best-effort-xsmall"
+          "count" = 2
+          "storageClass" = "kubernetes"
+        }
+      }
+    }
+  }
+}
