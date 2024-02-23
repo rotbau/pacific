@@ -2,7 +2,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: clustertst01
-  namespace: app01
+  namespace: app01-ns
 spec:
   clusterNetwork:
     services:
